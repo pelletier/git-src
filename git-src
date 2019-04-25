@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+
+set -e
+
+src_dir="$HOME/src"
+request="$1"
+
+function usage {
+    cat >&2 <<USAGE
+usage: git src <repo>
+
+<repo> is in the format owner/repository.
+
+src_dir=${src_dir}
+
+If the repository exists in src_dir, current working directory will be
+changed to src_dir/owner/repository. If any part of the path does not
+exist, src_dir/owner will be created, and the repository will be cloned.
+USAGE
+    exit 129
+}
+
+function fatal {
+    echo "fatal: $1" >&2
+    echo "" >&2
+    usage
+}
+
+if [ "${request}" = "" ]; then
+    fatal "You must provide a repository name."
+fi
+
+
+splits=(${request//\// })
+
+if [ ${#splits[@]} != 2 ]; then
+    fatal "Repository \"$request\" is not in a correct format."
+fi
+
+organization="github.com"
+owner="${splits[0]}"
+repo="${splits[1]}"
+git_url="git@${organization}:${owner}/${repo}.git"
+organization_dir="${src_dir}/${organization}"
+owner_dir="${organization_dir}/${owner}"
+target_dir="${owner_dir}/${repo}"
+
+if [ ! -d "${target_dir}" ]; then
+    echo "${target_dir} does not exist. Cloning." >&2
+    mkdir -p "${owner_dir}"
+    git clone "${git_url}" "${target_dir}" >&2
+fi
+
+echo "$target_dir"
