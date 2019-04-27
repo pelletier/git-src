@@ -1,6 +1,6 @@
 # git-src
 
-git-src helps moving around git repositories in your shell.
+git-src helps jumping around git repositories in your shell.
 
 ## Usage
 
