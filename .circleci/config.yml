@@ -1,7 +1,12 @@
 version: 2.1
 
 jobs:
-    linux:
+    build:
+        parameters:
+            os:
+                type: string
+            arch:
+                type: string
         docker:
             - image: circleci/golang:1.12
         working_directory: /go/src/github.com/pelletier/git-src
@@ -20,15 +25,15 @@ jobs:
                     trap "go-junit-report < ${TEST_RESULTS}/go-test.out > ${TEST_RESULTS}/go-test-report.xml" EXIT
                     go test github.com/pelletier/git-src -race -v | tee ${TEST_RESULTS}/go-test.out
             - run:
-                name: Build binary linux x64
+                name: Build binary <<parameters.os>> <<parameters.arch>>
                 command: |
                     export BINS=/tmp/workspace/binaries
                     mkdir -p ${BINS}
-                    CGO_ENABLED=0 GOOS=linux go build -o ${BINS}/git-src-linux-x64-master -a -ldflags '-extldflags "-static"' github.com/pelletier/git-src
+                    CGO_ENABLED=0 GOOS=<<parameters.os>> GOARCH=<<parameters.arch>> go build -o ${BINS}/git-src-<<parameters.os>>-<<parameters.arch>>-master -a -ldflags '-extldflags "-static"' github.com/pelletier/git-src
             - persist_to_workspace:
                 root: /tmp/workspace
                 paths:
-                    - binaries/git-src-linux-x64-master
+                    - binaries/git-src-<<parameters.os>>-<<parameters.arch>>-master
             - store_test_results:
                 path: /tmp/test-results
     release:
@@ -48,13 +53,20 @@ jobs:
 
 workflows:
     version: 2.1
-    build:
+    build-and-release:
         jobs:
-            - linux:
-                name: "linux_x64"
+            - build:
+                name: "linux_amd64"
+                os: "linux"
+                arch: "amd64"
+            - build:
+                name: "darwin_amd64"
+                os: "darwin"
+                arch: "amd64"
             - release:
                 requires:
-                    - linux_x64
+                    - linux_amd64
+                    - darwin_amd64
                 filters:
                     branches:
                         only: master
