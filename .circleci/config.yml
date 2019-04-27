@@ -22,14 +22,21 @@ jobs:
             - run:
                 name: Build binary linux x64
                 command: |
-                    mkdir -p /tmp/workspace/binaries/
-                    CGO_ENABLED=0 GOOS=linux go build -o /tmp/workspace/git-src-linux-x64-master -a -ldflags '-extldflags "-static"' github.com/pelletier/git-src
+                    export BINS=/tmp/workspace/binaries
+                    mkdir -p ${BINS}
+                    CGO_ENABLED=0 GOOS=linux go build -o ${BINS}/git-src-linux-x64-master -a -ldflags '-extldflags "-static"' github.com/pelletier/git-src
+            - persist_to_workspace:
+                root: /tmp/workspace
+                paths:
+                    - binaries/git-src-linux-x64-master
             - store_test_results:
                 path: /tmp/test-results
     release:
         docker:
             - image: circleci/golang:1.12
         steps:
+            - attach_workspace:
+                at: /tmp/workspace
             - run: go get github.com/tcnksm/ghr
             - store_artifacts:
                 path: /tmp/workspace/binaries
