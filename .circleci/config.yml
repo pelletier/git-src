@@ -37,10 +37,14 @@ jobs:
         steps:
             - attach_workspace:
                 at: /tmp/workspace
-            - run: go get github.com/tcnksm/ghr
             - store_artifacts:
                 path: /tmp/workspace/binaries
                 destination: binaries
+            - run: go get github.com/tcnksm/ghr
+            - run:
+                name: "Publish release to github"
+                command: |
+                    ghr -t ${GITHUB_TOKEN} -n "Master" -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -c ${CIRCLE_SHA1} -prerelease -delete master /tmp/workspace/binaries/
 
 workflows:
     version: 2.1
