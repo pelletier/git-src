@@ -1,10 +1,10 @@
 version: 2.1
 
 jobs:
-    build:
+    linux:
         docker:
             - image: circleci/golang:1.12
-        working_directory: /go/src/github.com/pelletier/go-src
+        working_directory: /go/src/github.com/pelletier/git-src
         environment:
             TEST_RESULTS: /tmp/test-results
         steps:
@@ -18,9 +18,32 @@ jobs:
                 name: Run unit tests
                 command: |
                     trap "go-junit-report < ${TEST_RESULTS}/go-test.out > ${TEST_RESULTS}/go-test-report.xml" EXIT
-                    go test github.com/pelletier/go-src -race -v | tee ${TEST_RESULTS}/go-test.out
-            - store_artifacts:
-                path: /tmp/test-results
-                destination: raw-test-output
+                    go test github.com/pelletier/git-src -race -v | tee ${TEST_RESULTS}/go-test.out
+            - run:
+                name: Build binary linux x64
+                command: |
+                    mkdir -p /tmp/workspace/binaries/
+                    CGO_ENABLED=0 GOOS=linux go build -o /tmp/workspace/git-src-linux-x64-master -a -ldflags '-extldflags "-static"' github.com/pelletier/git-src
             - store_test_results:
                 path: /tmp/test-results
+    release:
+        docker:
+            - image: circleci/golang:1.12
+        steps:
+            - run: go get github.com/tcnksm/ghr
+            - store_artifacts:
+                path: /tmp/workspace/binaries
+                destination: binaries
+
+workflows:
+    version: 2.1
+    build:
+        jobs:
+            - linux:
+                name: "linux_x64"
+            - release:
+                requires:
+                    - linux_x64
+                filters:
+                    branches:
+                        only: master
