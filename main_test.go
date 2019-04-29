@@ -8,12 +8,12 @@ type mapEnv struct {
 	data map[string]string
 }
 
-func makeMapEnv(kvs... string) *mapEnv {
-	if len(kvs) % 2 != 0 {
+func makeMapEnv(kvs ...string) *mapEnv {
+	if len(kvs)%2 != 0 {
 		panic("makeMapEnv: arguments must go in pairs")
 	}
 	m := map[string]string{}
-	for i := 0; i < len(kvs) / 2; i++ {
+	for i := 0; i < len(kvs)/2; i++ {
 		k := kvs[i*2]
 		v := kvs[i*2+1]
 		m[k] = v
@@ -35,11 +35,11 @@ func (e *mapEnv) Getenv(key string) string {
 var defaultEnv environment = makeMapEnv("GIT_SRC_ROOT", "/blah")
 
 type fakeGit struct {
-	cloned bool
-	repo string
-	target string
+	cloned       bool
+	repo         string
+	target       string
 	parentExists bool
-	err error
+	err          error
 }
 
 func (g *fakeGit) clone(repo string, target string) error {

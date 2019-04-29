@@ -29,6 +29,20 @@ $ src foo
 $ src hello/world
 ```
 
+By default, `git-src` also looks at other organization/owner if the repository cannot be
+found before cloning. For example:
+
+```
+# Go to a repository named "foo" in any org/owner
+$ src foo # => github.com/pelletier/foo
+
+# From github.com/pelletier/hello
+# If github.com/pelletier/world does not exist, look for a repository named "world" in
+# any other org/owner. For example, assuming github.com/example/world exists:
+$ src world # => github.com/example/world
+```
+
+You can turn off that behavior by exporting `GIT_SRC_LOOK_OUTSIDE_OWNER=false`.
 
 ## Installation
 

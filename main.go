@@ -1,13 +1,13 @@
 package main
 
 import (
-	"os"
 	"fmt"
+	"io/ioutil"
+	"os"
+	"os/exec"
 	"os/user"
 	"path"
 	"strings"
-	"os/exec"
-	"io/ioutil"
 )
 
 type environment interface {
@@ -30,18 +30,20 @@ func (e *osEnvironment) Getenv(key string) string {
 }
 
 type config struct {
-	SrcRootPath string // Root path of src. fully expended.
-	DefaultOrg string // Default organization.
+	SrcRootPath      string // Root path of src. fully expended.
+	DefaultOrg       string // Default organization.
 	WorkingDirectory string // Current working directory
+	LookOutsideOwner string // if "true", look for repository outside of owner
 }
 
 func configFromEnv(env environment) *config {
 	usr, _ := user.Current()
 	defaultSrcRootPath := path.Join(usr.HomeDir, "src")
 	return &config{
-		SrcRootPath: getFromEnvironment(env, "GIT_SRC_ROOT", defaultSrcRootPath),
-		DefaultOrg: getFromEnvironment(env, "GIT_SRC_DEFAULT_ORG", "github.com"),
+		SrcRootPath:      getFromEnvironment(env, "GIT_SRC_ROOT", defaultSrcRootPath),
+		DefaultOrg:       getFromEnvironment(env, "GIT_SRC_DEFAULT_ORG", "github.com"),
 		WorkingDirectory: getFromEnvironment(env, "PWD", ""),
+		LookOutsideOwner: getFromEnvironment(env, "GIT_SRC_LOOK_OUTSIDE_OWNER", "true"),
 	}
 }
 
@@ -130,7 +132,7 @@ func lookForRepository(rootPath string, repository string) (bool, string, string
 	return false, "", ""
 }
 
-func errPrintln(args... interface{}) {
+func errPrintln(args ...interface{}) {
 	fmt.Fprintln(os.Stderr, args...)
 }
 
@@ -221,6 +223,17 @@ func src(env environment, git gitOps, args []string) (string, int) {
 	target := path.Join(ownerPath, repo)
 
 	if !git.exists(target) {
+		if config.LookOutsideOwner == "true" {
+			found, newOrg, newOwner := lookForRepository(config.SrcRootPath, repo)
+			if found {
+				organization = newOrg
+				owner = newOwner
+				ownerPath := path.Join(config.SrcRootPath, organization, owner)
+				target := path.Join(ownerPath, repo)
+				return target, 0
+			}
+		}
+
 		origin := fmt.Sprintf("git@%s:%s/%s.git", organization, owner, repo)
 		errPrintln("repository not found. cloning from", origin)
 		err := git.create(ownerPath)
