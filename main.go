@@ -7,6 +7,7 @@ import (
 	"path"
 	"strings"
 	"os/exec"
+	"io/ioutil"
 )
 
 type environment interface {
@@ -91,6 +92,44 @@ func (g *gitOpsCli) create(path string) error {
 	return nil
 }
 
+// looks for rootPath/*/*/repository. returns empty string if not found or an error occurs
+// returns the first matching
+func lookForRepository(rootPath string, repository string) (bool, string, string) {
+	orgs, err := ioutil.ReadDir(rootPath)
+	if err != nil {
+		return false, "", ""
+	}
+	for _, orgDir := range orgs {
+		if !orgDir.IsDir() {
+			continue
+		}
+		orgPath := path.Join(rootPath, orgDir.Name())
+		owners, err := ioutil.ReadDir(orgPath)
+		if err != nil {
+			continue
+		}
+		for _, ownerDir := range owners {
+			if !ownerDir.IsDir() {
+				continue
+			}
+			ownerPath := path.Join(orgPath, ownerDir.Name())
+			repos, err := ioutil.ReadDir(ownerPath)
+			if err != nil {
+				continue
+			}
+			for _, repoDir := range repos {
+				if !repoDir.IsDir() {
+					continue
+				}
+				if repoDir.Name() == repository {
+					return true, orgDir.Name(), ownerDir.Name()
+				}
+			}
+		}
+	}
+	return false, "", ""
+}
+
 func errPrintln(args... interface{}) {
 	fmt.Fprintln(os.Stderr, args...)
 }
@@ -157,6 +196,15 @@ func src(env environment, git gitOps, args []string) (string, int) {
 		repo = components[1]
 	case 1:
 		repo = components[0]
+	}
+
+	if owner == "" {
+		// look for the repository
+		found, newOrg, newOwner := lookForRepository(config.SrcRootPath, repo)
+		if found {
+			organization = newOrg
+			owner = newOwner
+		}
 	}
 
 	if organization == "" {
