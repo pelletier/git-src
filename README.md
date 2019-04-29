@@ -2,6 +2,8 @@
 
 git-src helps jumping around git repositories in your shell.
 
+[![asciicast](https://asciinema.org/a/6xRVRuh5Wqv2qCr3LndgdI2be.svg)](https://asciinema.org/a/6xRVRuh5Wqv2qCr3LndgdI2be)
+
 ## Usage
 
 *Usage:* `src <repo>`: `cd` to a repository, cloning it if it is missing.
